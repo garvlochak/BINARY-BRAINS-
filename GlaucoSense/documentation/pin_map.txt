@@ -1,0 +1,50 @@
+GlaucoSense - Pin Map
+Owner: M1 / all members reference this
+Purpose: Quick-reference pin list. The real source of truth is
+         firmware/GlaucoSense_Final/config.h - if this file and config.h
+         ever disagree, config.h wins. Update this file whenever config.h
+         changes.
+
+NOT a medical device. Bench-test prototype only, artificial eye / balloon
+membrane only - never a real eye.
+
+Board: ESP32-WROOM-32 Dev Module (classic ESP32, NOT the S3)
+
+  Signal              ESP32 Pin      Notes
+  ------------------  -------------  --------------------------------------
+  I2C_SDA             GPIO21         Shared bus: VL53L0X + SSD1306 OLED
+  I2C_SCL             GPIO22         Shared bus: VL53L0X + SSD1306 OLED
+  PUMP_PIN            GPIO25         Drives pump MOSFET gate (low-side)
+  VALVE_PIN           GPIO26         Drives valve MOSFET gate (low-side)
+  PRESSURE_ADC_PIN    GPIO34         ADC1_CH6, input from voltage divider
+  START_BUTTON_PIN    GPIO27         INPUT_PULLUP, button pulls pin to GND
+  STATUS_LED_PIN      GPIO32         Output, drives status LED (+ resistor)
+
+I2C addresses:
+  VL53L0X ToF sensor  : default address (0x29), library default
+  SSD1306 OLED        : 0x3C
+
+Pressure divider (between MPX5010DP Vout and PRESSURE_ADC_PIN):
+  Rtop    = 12k ohm
+  Rbottom = 20k ohm
+  Ratio   = Rbottom / (Rtop + Rbottom) = 20 / 32 = 0.625
+
+  MPX5010DP max Vout (at 10 kPa) = 5.0 * (0.09*10 + 0.04) = 4.70 V
+  After divider: 4.70 * 0.625 = 2.94 V - safely inside the ESP32's 3.3V ADC range.
+
+Why these specific pins (classic ESP32 gotchas - read before reassigning):
+  - GPIO6-11 are wired internally to the module's SPI flash chip on classic
+    ESP32-WROOM-32 boards. NEVER use them as GPIO - the board will fail to
+    boot or behave unpredictably. (This is different from the ESP32-S3,
+    which does not reserve this range - that's why this pin map changed
+    when we switched boards.)
+  - GPIO0, 2, 12, 15 are strapping pins that affect boot mode - avoid using
+    them for anything that must stay in a known state during power-on/reset.
+  - GPIO1/GPIO3 are UART0 TX/RX, used for flashing and Serial - do not reuse.
+  - GPIO34-39 are input-only (no pull-up/down, cannot drive an output) -
+    fine for PRESSURE_ADC_PIN, useless for the pump/valve/LED/button.
+  - GPIO4 is ADC2 on classic ESP32 (it was ADC1 on the S3!). ADC2 shares
+    hardware with the WiFi driver and is unreliable, so PRESSURE_ADC_PIN
+    was moved to GPIO34, which is a true ADC1 channel.
+
+Do not change any of these pins without also updating config.h.

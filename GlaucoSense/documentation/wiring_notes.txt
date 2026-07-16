@@ -1,0 +1,102 @@
+GlaucoSense - Wiring Notes
+Owner: M1 (actuators / state machine)
+Purpose: Full wiring instructions, including the safety details that are
+         easy to miss as a beginner (MOSFET low-side switching, flyback
+         diodes, common ground, and the pressure sensor voltage divider).
+
+NOT a medical device. Bench-test prototype only, artificial eye / balloon
+membrane only - never a real eye. Never point this device at, or use it
+on, a real eye.
+
+===============================================================================
+1. Power
+===============================================================================
+- ESP32-WROOM-32 Dev Module is powered over USB (5V from the USB port).
+- The pump and valve need their own 5V/appropriate supply capable of the
+  current they draw - do NOT try to power them from the ESP32's 5V/3V3 pins.
+- Common ground: the ESP32 ground, the pump/valve supply ground, and the
+  MOSFET source/ground MUST all be tied together. Without a common ground,
+  the "logic level" MOSFET gate signal from the ESP32 has no reliable
+  reference and the actuators may behave unpredictably or not switch at all.
+- NEVER wire anything to GPIO6-11 on this board - they connect internally
+  to the module's SPI flash chip and are not available as general GPIO
+  (see documentation/pin_map.txt for the full list of reserved/special pins).
+
+===============================================================================
+2. Pump and valve - low-side N-MOSFET switching
+===============================================================================
+Both the 370 diaphragm pump and the 5V normally-closed (NC) solenoid valve
+are inductive/motor loads switched on the LOW side (ground side) by a
+logic-level N-MOSFET:
+
+  [Actuator +] ---- [Actuator supply +V]
+  [Actuator -] ---- [MOSFET Drain]
+  [MOSFET Source] ---- [Common GND]
+  [MOSFET Gate] ---- [ESP32 GPIO pin]  (PUMP_PIN or VALVE_PIN)
+  [Gate] ---- [10k ohm resistor] ---- [GND]   (pull-down so the gate is not floating at boot)
+
+Flyback diode (REQUIRED for both pump and valve - they are inductive loads):
+  Place a diode (e.g. 1N4007 or similar) across the actuator terminals,
+  cathode (banded end) towards the actuator's +V supply, anode towards the
+  MOSFET drain. This gives the collapsing magnetic field somewhere to go
+  when the MOSFET switches off, protecting the MOSFET (and the ESP32 pin
+  behind it) from voltage spikes.
+
+Valve behavior: it is normally-closed (NC), meaning de-energized = closed.
+Energizing it (MOSFET on, GPIO HIGH) opens it. All firmware in this project
+starts with the valve pin LOW (closed) and guarantees it returns to LOW
+after every pulse - see actuators.cpp / sensors.cpp captureTrial().
+
+===============================================================================
+3. Pressure sensor - MPX5010DP (0-10 kPa differential, ratiometric to 5V)
+===============================================================================
+  MPX5010DP Vout ---- [Rtop = 12k ohm] ---- ESP32 PRESSURE_ADC_PIN (GPIO34)
+                                          |
+                                    [Rbottom = 20k ohm]
+                                          |
+                                         GND
+
+WARNING: NEVER connect MPX5010DP Vout directly to an ESP32 GPIO. The sensor
+is powered from 5V and can output close to 5V, which exceeds the ESP32's
+3.3V-tolerant ADC input range and can damage the pin. The voltage divider
+above (ratio 0.625) brings the maximum ~4.7V output down to a safe ~2.9V.
+
+Use analogReadMilliVolts() with ADC_11db attenuation and 12-bit resolution
+(see config.h) - the firmware then divides the divider ratio back out in
+software to recover the sensor's true output voltage before converting to
+kPa.
+
+Note: PRESSURE_ADC_PIN is GPIO34, a true ADC1 channel (ADC1_CH6) - use this,
+not GPIO4. On classic ESP32, GPIO4 is on ADC2, which shares hardware with
+the WiFi radio and gives unreliable readings.
+
+===============================================================================
+4. VL53L0X ToF distance sensor
+===============================================================================
+- I2C only: VCC (3.3V), GND, SDA -> I2C_SDA_PIN (GPIO21), SCL -> I2C_SCL_PIN (GPIO22).
+- Shares the I2C bus with the SSD1306 OLED - both need pull-up resistors on
+  SDA/SCL if your breakout boards don't already include them (most do).
+- Runs in continuous ranging mode with a 20ms timing budget (~50 Hz).
+
+===============================================================================
+5. SSD1306 OLED (128x64, I2C address 0x3C)
+===============================================================================
+- VCC (3.3V or 5V depending on your board - check its datasheet), GND,
+  SDA -> I2C_SDA_PIN (GPIO21), SCL -> I2C_SCL_PIN (GPIO22).
+
+===============================================================================
+6. Start button and status LED
+===============================================================================
+- START_BUTTON_PIN (GPIO27): one leg to GND, other leg to the GPIO. Uses the
+  ESP32's internal INPUT_PULLUP, so the pin reads LOW when pressed. No
+  external resistor needed.
+- STATUS_LED_PIN (GPIO32): GPIO -> current-limiting resistor (e.g. 220-330
+  ohm) -> LED anode -> LED cathode -> GND.
+
+===============================================================================
+7. Before powering on
+===============================================================================
+- Double-check every ground is common.
+- Double-check the pressure divider is in place (never Vout straight to GPIO).
+- Double-check flyback diode polarity on both pump and valve.
+- Make sure the trial membrane is an artificial eye / balloon setup only.

@@ -1,0 +1,100 @@
+GlaucoSense - Errors and Fixes
+Owner: all members
+Purpose: Common problems seen while bringing up this project and how to fix
+         them. Add to this file whenever you solve something new so the
+         next person doesn't have to debug it again.
+
+NOT a medical device. Bench-test prototype only.
+
+===============================================================================
+ESP32 upload problems
+===============================================================================
+
+"A fatal error occurred: Failed to write to target RAM" / "Write timeout"
+  - Close the Serial Monitor (or any other program using the COM/tty port)
+    before uploading. Only one program can hold the serial port at a time.
+  - Try the BOOT-hold trick: hold the BOOT button, tap EN/RESET, keep holding
+    BOOT until "Connecting..." appears in the upload log, then release BOOT.
+    Classic ESP32 boards need this more often than the S3 does, since most
+    of them don't auto-reset into the bootloader as reliably.
+  - Lower the upload speed to 115200 in Tools > Upload Speed if a higher
+    speed is failing.
+
+Board not showing up in Tools > Port
+  - Try a different USB cable - some are charge-only with no data lines.
+  - Classic ESP32 Dev Modules talk over a USB-UART bridge chip (usually
+    CP2102 or CH340, not native USB) - install that chip's driver for your
+    OS if the port never appears.
+  - There is no "USB CDC On Boot" setting for this board (that's an
+    ESP32-S3-only option) - ignore any old instructions that mention it.
+
+Sketch uploads but nothing prints on Serial Monitor
+  - Check the Serial Monitor baud rate is set to 115200 (matches Serial.begin(115200)).
+  - Make sure you selected the right Port - CP2102/CH340 adapters usually
+    show up as "Silicon Labs CP210x" or "USB-SERIAL CH340" in the port list.
+  - Give the board a couple of seconds after upload before expecting output.
+
+Random reboots / brownout messages in Serial Monitor
+  - Usually a power issue: the pump/valve supply is undervoltage or the USB
+    port cannot supply enough current for everything on the board at once.
+    Use a separate 5V supply for the pump/valve (see wiring_notes.txt).
+
+===============================================================================
+Switching MCU boards (e.g. ESP32-S3 <-> classic ESP32)
+===============================================================================
+
+Board boots into a crash loop / won't run right after swapping boards
+  - Classic ESP32-WROOM-32 reserves GPIO6-11 for its internal SPI flash chip.
+    If a pin plan was written for the S3 (which doesn't reserve that range)
+    and reused as-is on a classic ESP32, wiring anything to 6-11 will break
+    the board. See documentation/pin_map.txt for the current safe pin list.
+  - GPIO4 is ADC1 on the ESP32-S3 but ADC2 on classic ESP32 - if pressure
+    readings are noisy/wrong only after a board swap, check PRESSURE_ADC_PIN
+    is on a real ADC1 pin for the board you're actually using.
+  - Whenever the MCU changes, re-check config.h against the new board's
+    datasheet before assuming the old pin numbers still work.
+
+===============================================================================
+Sensor troubleshooting
+===============================================================================
+
+VL53L0X: "ERROR: VL53L0X not found. Check wiring."
+  - Check SDA/SCL are on GPIO21/GPIO22 and not swapped.
+  - Check the sensor is powered (3.3V) and GND is common with the ESP32.
+  - Run an I2C scanner sketch if unsure of the address - default is 0x29.
+  - Make sure only one I2C device is initialized on the pins at a time
+    when testing in isolation (04/05/06 test sketches don't touch the OLED).
+
+VL53L0X: readings are always 0, 8190, or otherwise clearly wrong
+  - 8190 / max-range values usually mean out-of-range or nothing reflecting
+    the beam back - check the sensor has a clear line of sight to the
+    membrane and is within ~1000mm range.
+  - Distance > 1000mm is intentionally treated as invalid by this firmware
+    (TOF_MAX_VALID_MM in config.h) - this is expected, not a bug.
+
+SSD1306: "ERROR: SSD1306 not found. Check wiring/address."
+  - Confirm the I2C address is 0x3C (some SSD1306 boards ship as 0x3D -
+    check your specific breakout's datasheet/silkscreen).
+  - Check SDA/SCL wiring and that the OLED is on the same 3.3V rail.
+
+Pressure readings look wrong or drift over time
+  - Re-run the 05_pressure_calibration test sketch - the zero offset must
+    be measured with the system open to atmosphere (pump/valve off).
+  - Double check the voltage divider resistor values (12k/20k) - a wrong
+    value here throws off every reading by a fixed scale factor.
+  - Temperature and cable flex can cause slow drift - recalibrate zero
+    offset before each session, not just once.
+
+Pump or valve doesn't respond
+  - Check the MOSFET gate pull-down resistor is present (floating gates can
+    cause random switching, especially right at boot).
+  - Confirm common ground between the ESP32, MOSFET, and pump/valve supply.
+  - Test the actuator directly with 02_pump_test / 03_valve_test in
+    isolation before blaming the main state machine.
+
+Pump or valve seems to "stick on"
+  - This should never happen in software - every code path that turns
+    something on (chargeReservoir, captureTrial) is written to always turn
+    it back off, even on error/timeout. If you see this, it's almost always
+    a wiring issue (MOSFET wired backwards, gate resistor missing) rather
+    than a firmware bug - double check wiring_notes.txt first.
