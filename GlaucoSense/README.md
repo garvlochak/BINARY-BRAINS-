@@ -105,15 +105,16 @@ Model training itself is done separately by the team (not scripted here).
 The classifier lives in three files under `firmware/GlaucoSense_Final/`:
 
 - `model_inference.h` - interface only (struct, class constants, function declaration)
-- `model_inference.cpp` - the implementation. Currently a **placeholder
-  threshold classifier** (deformation-based)
-- `model_data.h` - landing spot for the trained model's numbers
-  (FEAT_MEAN, FEAT_STD, COEF, INTERCEPT), currently all placeholder zeros
-  and not yet used
+- `model_inference.cpp` - the implementation: scales features and scores
+  each class with a logistic regression (the real math, not a placeholder)
+- `model_data.h` - the trained model's numbers (FEAT_MEAN, FEAT_STD, COEF,
+  INTERCEPT)
 
-Once the team has trained a model, fill in `model_data.h` with the real
-numbers and rewrite `runInference()` in `model_inference.cpp` to use them
-instead of the threshold rules.
+> **Current status:** `model_data.h` is trained on **synthetic (fabricated)
+> data**, not real sensor readings - see
+> [`machine_learning/data/SYNTHETIC_DATA_NOTICE.txt`](machine_learning/data/SYNTHETIC_DATA_NOTICE.txt)
+> for why and what to do once real hardware data is available. The code
+> path is real and correct; only the numbers need replacing.
 
 ## Next steps (in order)
 

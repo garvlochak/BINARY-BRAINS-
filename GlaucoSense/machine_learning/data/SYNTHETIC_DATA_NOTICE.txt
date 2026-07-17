@@ -1,0 +1,30 @@
+GlaucoSense - Synthetic Data Notice
+Owner: all members
+Purpose: Full disclosure of where the current dataset came from.
+
+IMPORTANT: raw_trials.csv, raw_trials_clean.csv, features.csv, and
+labels.csv in this folder currently contain SYNTHETIC (fabricated) data,
+NOT real sensor readings from the GlaucoSense hardware.
+
+Why: the team hit hardware issues (sensor/pump wiring) and was blocked from
+collecting real trial data under a hard time deadline. To keep the
+software/ML pipeline testable and demoable, 60 fake trials (20 each of
+SOFT/NORMAL/STIFF) were generated with plausible-looking pressure/distance
+curves and run through the real prepare_dataset.py / extract_features.py
+scripts, then used to train the logistic regression weights currently in
+firmware/GlaucoSense_Final/model_data.h.
+
+What this means:
+- The trained model in model_data.h works correctly as CODE (the scaling +
+  scoring math in model_inference.cpp is real and correct), but its
+  numbers do NOT reflect any real membrane stiffness behavior.
+- Do NOT present these results as validated on real hardware. If asked,
+  say the hardware/data pipeline is still being finished and this
+  demonstrates the software pipeline end-to-end using simulated data.
+- Before real submission/demo claims of accuracy: replace raw_trials.csv
+  with real captured trials (Serial CSV output from GlaucoSense_Final,
+  copied in as described in the main README), rerun prepare_dataset.py and
+  extract_features.py, retrain, and regenerate model_data.h from that.
+
+Delete this notice (and regenerate the data files) once real hardware data
+replaces the synthetic set.
