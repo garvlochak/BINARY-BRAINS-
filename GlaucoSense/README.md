@@ -102,11 +102,18 @@ features.csv + labels.csv --(evaluate_model.py)--> classification report
 ```
 
 Model training itself is done separately by the team (not scripted here).
-`model_inference.h` currently contains a **placeholder threshold
-classifier** (deformation-based). Member 3 replaces it with the trained
-model (exported as a `model_config.h` with FEAT_MEAN, FEAT_STD, COEF,
-INTERCEPT arrays, or whatever export format the trained model ends up using)
-once enough trial data has been collected.
+The classifier lives in three files under `firmware/GlaucoSense_Final/`:
+
+- `model_inference.h` - interface only (struct, class constants, function declaration)
+- `model_inference.cpp` - the implementation. Currently a **placeholder
+  threshold classifier** (deformation-based)
+- `model_data.h` - landing spot for the trained model's numbers
+  (FEAT_MEAN, FEAT_STD, COEF, INTERCEPT), currently all placeholder zeros
+  and not yet used
+
+Once the team has trained a model, fill in `model_data.h` with the real
+numbers and rewrite `runInference()` in `model_inference.cpp` to use them
+instead of the threshold rules.
 
 ## Next steps (in order)
 

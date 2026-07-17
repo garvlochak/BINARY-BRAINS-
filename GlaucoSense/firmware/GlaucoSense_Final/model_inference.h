@@ -1,7 +1,9 @@
 /*
  * GlaucoSense - model_inference.h
  * Owner: M3 (ML)
- * Purpose: Turns Features into a stiffness class + confidence.
+ * Purpose: Interface for turning Features into a stiffness class +
+ *          confidence. See model_inference.cpp for the implementation and
+ *          model_data.h for where the trained model's numbers go.
  *
  * NOT a medical device. Bench-test prototype only, artificial eye / balloon
  * membrane only - never a real eye.
@@ -12,41 +14,15 @@
 
 #include "feature_extraction.h"
 
-// ===========================================================================
-// !!! PLACEHOLDER MODEL - MEMBER 3 (M3), YOU MUST REPLACE THIS !!!
-//
-// This is just a rough guess based on deformation size, so the rest of the
-// team can test the full pipeline (state machine, display, logging) while
-// the real model is being trained separately. Once the trained model is
-// exported (e.g. as a model_config.h with FEAT_MEAN, FEAT_STD, COEF,
-// INTERCEPT arrays), replace the body of runInference() below with the
-// real model math.
-// DO NOT demo or submit the project with this placeholder still in place.
-// ===========================================================================
-
 #define CLASS_SOFT   0
 #define CLASS_NORMAL 1
 #define CLASS_STIFF  2
 
 struct InferenceResult {
   int stiffnessClass;  // CLASS_SOFT, CLASS_NORMAL, or CLASS_STIFF
-  float confidence;     // 0.0 - 1.0 (placeholder value, not a real probability yet)
+  float confidence;     // 0.0 - 1.0
 };
 
-inline InferenceResult runInference(const Features& f) {
-  InferenceResult result;
-
-  if (f.max_deform_mm >= 3.0f) {
-    result.stiffnessClass = CLASS_SOFT;     // deforms a lot -> soft membrane
-  } else if (f.max_deform_mm <= 1.0f) {
-    result.stiffnessClass = CLASS_STIFF;    // barely deforms -> stiff membrane
-  } else {
-    result.stiffnessClass = CLASS_NORMAL;
-  }
-
-  result.confidence = 0.5f; // fixed placeholder, real model will compute this
-
-  return result;
-}
+InferenceResult runInference(const Features& f);
 
 #endif // MODEL_INFERENCE_H
