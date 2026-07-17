@@ -17,9 +17,10 @@
 //
 // This is just a rough guess based on deformation size, so the rest of the
 // team can test the full pipeline (state machine, display, logging) while
-// the real model is being trained. Once machine_learning/train_model.py has
-// exported model_config.h (FEAT_MEAN, FEAT_STD, COEF, INTERCEPT), replace the
-// body of runInference() below with the real logistic-regression math.
+// the real model is being trained separately. Once the trained model is
+// exported (e.g. as a model_config.h with FEAT_MEAN, FEAT_STD, COEF,
+// INTERCEPT arrays), replace the body of runInference() below with the
+// real model math.
 // DO NOT demo or submit the project with this placeholder still in place.
 // ===========================================================================
 

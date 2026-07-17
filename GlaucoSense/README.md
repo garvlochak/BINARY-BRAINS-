@@ -20,8 +20,7 @@ GlaucoSense/
 │   ├── data/                    raw_trials.csv, features.csv, labels.csv
 │   ├── prepare_dataset.py       Cleans raw_trials.csv
 │   ├── extract_features.py      Raw samples -> per-trial features
-│   ├── train_model.py           Trains + exports model_config.h
-│   └── evaluate_model.py        Held-out evaluation report
+│   └── evaluate_model.py        Held-out evaluation report (training itself is done separately)
 ├── documentation/
 │   ├── wiring_notes.txt         Full wiring, MOSFETs, flyback diodes, safety
 │   ├── pin_map.txt              Quick pin reference
@@ -99,13 +98,15 @@ if the upload fails.
 ```
 raw_trials.csv --(prepare_dataset.py)--> raw_trials_clean.csv
 raw_trials_clean.csv --(extract_features.py)--> features.csv
-features.csv + labels.csv --(train_model.py)--> model_config.h
 features.csv + labels.csv --(evaluate_model.py)--> classification report
 ```
 
+Model training itself is done separately by the team (not scripted here).
 `model_inference.h` currently contains a **placeholder threshold
 classifier** (deformation-based). Member 3 replaces it with the trained
-model exported as `model_config.h` once enough trial data has been collected.
+model (exported as a `model_config.h` with FEAT_MEAN, FEAT_STD, COEF,
+INTERCEPT arrays, or whatever export format the trained model ends up using)
+once enough trial data has been collected.
 
 ## Next steps (in order)
 
