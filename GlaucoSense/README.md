@@ -43,7 +43,9 @@ GlaucoSense/
 - **Distance:** VL53L0X ToF sensor, I2C, continuous mode, 20ms timing budget (~50 Hz)
 - **Pressure:** MPX5010DP (0-10 kPa differential, ratiometric to 5V), through a
   12k/20k voltage divider into the ESP32 ADC
-- **Display:** SSD1306 OLED 128x64, I2C address 0x3C
+- **Display (optional):** SSD1306 OLED 128x64, I2C address 0x3C - if it's
+  not wired up, the firmware detects that at boot and runs fine without it;
+  state transitions and trial results are always also printed to Serial.
 - **Actuators:** 370 diaphragm pump + 5V normally-closed solenoid valve, each
   switched by a logic-level N-MOSFET (low-side)
 
@@ -87,8 +89,10 @@ if the upload fails.
 6. Start a trial by pressing the **START_BUTTON_PIN** button, or typing `s`
    and pressing Enter in the Serial Monitor.
 7. The state machine runs: `READY -> BASELINE -> PUMPING -> STABILIZE ->
-   RECORD -> ANALYZE -> READY`. Watch the OLED for live state + the final
-   result, and read the Serial Monitor for the raw/feature CSV log.
+   RECORD -> ANALYZE -> READY`. The Serial Monitor always prints each state
+   transition, the raw/feature CSV log, and the final result (class +
+   confidence) - the OLED shows the same thing if one is wired up, but it's
+   not required.
 8. Copy the CSV rows printed on Serial into
    `machine_learning/data/raw_trials.csv` (and label each trial in
    `labels.csv`) to build up a training dataset.

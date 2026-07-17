@@ -25,4 +25,12 @@ struct InferenceResult {
 
 InferenceResult runInference(const Features& f);
 
+// Shared "SOFT"/"NORMAL"/"STIFF" text, used by both Serial logging and the
+// (optional) OLED display so the two never disagree.
+inline const char* stiffnessClassName(int stiffnessClass) {
+  if (stiffnessClass == CLASS_SOFT) return "SOFT";
+  if (stiffnessClass == CLASS_STIFF) return "STIFF";
+  return "NORMAL";
+}
+
 #endif // MODEL_INFERENCE_H

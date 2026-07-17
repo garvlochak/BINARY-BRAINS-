@@ -2,6 +2,10 @@
  * GlaucoSense - display_manager.cpp
  * Owner: M4 (display / logging)
  * Purpose: Draws every screen shown on the 128x64 SSD1306 OLED.
+ *          The OLED is OPTIONAL - if initDisplay() doesn't find one, every
+ *          function below silently does nothing instead of crashing/hanging,
+ *          so the rest of the firmware (state machine, actuators, Serial
+ *          logging) works fine with no screen wired up at all.
  *
  * NOT a medical device. Bench-test prototype only, artificial eye / balloon
  * membrane only - never a real eye.
@@ -17,18 +21,16 @@
 #define SCREEN_HEIGHT 64
 
 static Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
-
-static const char* classToText(int stiffnessClass) {
-  if (stiffnessClass == CLASS_SOFT) return "SOFT";
-  if (stiffnessClass == CLASS_STIFF) return "STIFF";
-  return "NORMAL";
-}
+static bool displayFound = false;
 
 bool initDisplay() {
-  return display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDR);
+  displayFound = display.begin(SSD1306_SWITCHCAPVCC, OLED_I2C_ADDR);
+  return displayFound;
 }
 
 void showSplashScreen() {
+  if (!displayFound) return;
+
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 
@@ -44,6 +46,8 @@ void showSplashScreen() {
 }
 
 void showStateScreen(const char* stateName) {
+  if (!displayFound) return;
+
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 
@@ -60,6 +64,8 @@ void showStateScreen(const char* stateName) {
 }
 
 void showLiveValues(float pressureKPa, int distanceMM) {
+  if (!displayFound) return;
+
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 
@@ -85,6 +91,8 @@ void showLiveValues(float pressureKPa, int distanceMM) {
 }
 
 void showResultScreen(int trialNumber, const InferenceResult& result) {
+  if (!displayFound) return;
+
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 
@@ -95,7 +103,7 @@ void showResultScreen(int trialNumber, const InferenceResult& result) {
 
   display.setTextSize(2);
   display.setCursor(0, 20);
-  display.println(classToText(result.stiffnessClass));
+  display.println(stiffnessClassName(result.stiffnessClass));
 
   display.setTextSize(1);
   display.setCursor(0, 48);
@@ -107,6 +115,8 @@ void showResultScreen(int trialNumber, const InferenceResult& result) {
 }
 
 void showErrorScreen(const char* message) {
+  if (!displayFound) return;
+
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 

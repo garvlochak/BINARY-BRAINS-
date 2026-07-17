@@ -79,10 +79,15 @@ the WiFi radio and gives unreliable readings.
 - Runs in continuous ranging mode with a 20ms timing budget (~50 Hz).
 
 ===============================================================================
-5. SSD1306 OLED (128x64, I2C address 0x3C)
+5. SSD1306 OLED (128x64, I2C address 0x3C) - OPTIONAL
 ===============================================================================
 - VCC (3.3V or 5V depending on your board - check its datasheet), GND,
   SDA -> I2C_SDA_PIN (GPIO21), SCL -> I2C_SCL_PIN (GPIO22).
+- Not required to run trials: if initDisplay() doesn't find one at boot,
+  display_manager.cpp's functions all silently do nothing instead of
+  crashing/hanging. Every state transition and the final result (class +
+  confidence) are always also printed over Serial, so the OLED is a nice-
+  to-have, not a dependency.
 
 ===============================================================================
 6. Start button and status LED

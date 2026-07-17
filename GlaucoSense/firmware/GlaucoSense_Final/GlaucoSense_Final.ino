@@ -44,9 +44,26 @@ static float trialPressureKPa[MAX_TRIAL_SAMPLES];
 static int trialDistanceMM[MAX_TRIAL_SAMPLES];
 static int trialSampleCount = 0;
 
+// Prints the state name, e.g. "State: BASELINE" - keep this as one place so
+// Serial Monitor always shows what's happening even with no OLED wired up.
+static const char* stateName(TrialState state) {
+  switch (state) {
+    case STATE_READY:     return "READY";
+    case STATE_BASELINE:  return "BASELINE";
+    case STATE_PUMPING:   return "PUMPING";
+    case STATE_STABILIZE: return "STABILIZE";
+    case STATE_RECORD:    return "RECORD";
+    case STATE_ANALYZE:   return "ANALYZE";
+    case STATE_ERROR:     return "ERROR";
+  }
+  return "?";
+}
+
 static void enterState(TrialState newState) {
   currentState = newState;
   stateEnteredAt = millis();
+  Serial.print("State: ");
+  Serial.println(stateName(newState));
   // Light the status LED whenever we are in the ERROR state, off otherwise.
   digitalWrite(STATUS_LED_PIN, newState == STATE_ERROR ? HIGH : LOW);
 }
@@ -78,7 +95,10 @@ void setup() {
   digitalWrite(STATUS_LED_PIN, LOW);
 
   if (!initDisplay()) {
-    Serial.println("ERROR: OLED not found, check wiring");
+    // The OLED is optional - if it's not there, every display_manager
+    // function silently does nothing, and the state machine + Serial
+    // Monitor still work fully without it.
+    Serial.println("No OLED found - continuing in Serial-only mode");
   }
   showSplashScreen();
   delay(1500);
@@ -173,7 +193,13 @@ void loop() {
       InferenceResult result = runInference(f);
       showResultScreen(trialNumber, result);
 
-      delay(3000); // give the user time to read the result screen
+      Serial.print("Result: ");
+      Serial.print(stiffnessClassName(result.stiffnessClass));
+      Serial.print(" (confidence ");
+      Serial.print(result.confidence * 100.0f, 0);
+      Serial.println("%)");
+
+      delay(3000); // give the user time to read the result (Serial or OLED)
       enterState(STATE_READY);
       break;
     }
