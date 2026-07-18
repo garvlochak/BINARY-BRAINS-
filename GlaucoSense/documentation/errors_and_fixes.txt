@@ -86,15 +86,53 @@ Pressure readings look wrong or drift over time
     offset before each session, not just once.
 
 Pump or valve doesn't respond
+  - Run firmware/diagnostics/diagnostics.ino test [4] (pump) or [5] (valve)
+    FIRST - it toggles the pin 1s on/1s off in isolation, no state machine
+    or sensors involved, so you can tell immediately if it's a wiring issue
+    or a firmware issue.
   - Check the MOSFET gate pull-down resistor is present (floating gates can
     cause random switching, especially right at boot).
-  - Confirm common ground between the ESP32, MOSFET, and pump/valve supply.
-  - Test the actuator directly with 02_pump_test / 03_valve_test in
-    isolation before blaming the main state machine.
+  - Confirm common ground between the ESP32, MOSFET, and pump/valve supply -
+    and that it's actually continuous, not just "on the same rail" (see the
+    breadboard split-rail note in wiring_notes.txt section 8).
+  - Confirm the MOSFET is logic-level (fully switches on at 3.3V) - a
+    standard (non-logic-level) MOSFET will not switch fully from an ESP32 GPIO.
+
+Adding the flyback diode made EVERYTHING stop working (even things that worked before)
+  - This points almost certainly to the diode being wired BACKWARDS. If the
+    diode's orientation is reversed across the pump/valve terminals, it
+    shorts the supply the instant the MOSFET turns on, causing a brownout
+    that can affect the whole board - not just the pump/valve. Double-check:
+    cathode (the striped end) goes to the +5V/supply side, anode goes to the
+    MOSFET-drain/motor-negative side. Re-check with the diode removed first
+    to confirm the rest of the circuit still works, then re-add it with
+    correct orientation.
 
 Pump or valve seems to "stick on"
   - This should never happen in software - every code path that turns
-    something on (chargeReservoir, captureTrial) is written to always turn
-    it back off, even on error/timeout. If you see this, it's almost always
-    a wiring issue (MOSFET wired backwards, gate resistor missing) rather
-    than a firmware bug - double check wiring_notes.txt first.
+    something on (the CHARGING/PUFF states in GlaucoSense_Final.ino,
+    PRESSURE_HARD_LIMIT_KPA, PUMP_TIMEOUT_MS) is written to always turn it
+    back off, even on error/timeout. If you see this, it's almost always a
+    wiring issue (MOSFET wired backwards, gate resistor missing) rather than
+    a firmware bug - double check wiring_notes.txt first.
+
+IR sensor behaves inverted (pump runs when nothing's detected, not when something is)
+  - Compare the sensor's own onboard LED against diagnostics.ino test [1]'s
+    raw HIGH/LOW output side by side. If the LED lights up when Serial shows
+    the opposite of what you'd expect, flip IR_ACTIVE_LEVEL in config.h (one
+    line) - nothing else needs to change.
+  - If the raw reading looks random/noisy rather than consistently inverted,
+    check the OUT wire isn't loose or floating - a disconnected signal wire
+    picks up noise and triggers falsely. The firmware debounces this
+    (IR_DEBOUNCE_COUNT reads in a row before believing a change), but a
+    genuinely floating wire can still read garbage.
+
+No Serial output at all (not even the boot banner)
+  - Confirm Serial Monitor baud is set to 115200.
+  - Confirm you selected the right Port (see "Board not showing up" above).
+  - On classic ESP32, plain Serial.begin(115200) is correct - don't add
+    ARDUINO_USB_CDC_ON_BOOT (that's an S3-only build flag from an earlier
+    revision of this project and does not apply here).
+  - If GLAUCOSENSE BOOT OK never appears, the board may be stuck before
+    Serial.begin() runs - check for a wiring short (especially a reversed
+    flyback diode - see above) causing a boot loop/brownout.

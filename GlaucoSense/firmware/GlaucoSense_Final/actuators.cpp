@@ -3,7 +3,9 @@
  * Owner: M1 (actuators / state machine)
  * Purpose: Implements pump and valve control. Pump and solenoid valve are
  *          each switched by a low-side N-MOSFET (see documentation/wiring_notes.txt
- *          for flyback diode + common ground requirements).
+ *          for flyback diode + common ground requirements). Every function
+ *          here is a single, immediate pin write - no timing/polling logic -
+ *          so it's safe to call from a non-blocking state machine.
  *
  * NOT a medical device. Bench-test prototype only, artificial eye / balloon
  * membrane only - never a real eye.
@@ -11,12 +13,14 @@
 
 #include "actuators.h"
 #include "config.h"
-#include "sensors.h"
 
 void initActuators() {
   pinMode(PUMP_PIN, OUTPUT);
   pinMode(VALVE_PIN, OUTPUT);
-  // Safe state first: force both actuators off before anything else runs.
+  // SAFE STATE FIRST: force both actuators off immediately, before anything
+  // else in the program runs. A physical ~10k pull-down resistor on each
+  // MOSFET gate is still required (human wiring check) so the pump/valve
+  // can't switch on from a floating gate before this line executes.
   allOff();
 }
 
@@ -39,26 +43,4 @@ void valveClose() {
 void allOff() {
   pumpOff();
   valveClose();
-}
-
-bool chargeReservoir(float targetKPa, unsigned long timeoutMs) {
-  unsigned long start = millis();
-  bool reachedTarget = false;
-
-  pumpOn();
-
-  while (millis() - start < timeoutMs) {
-    if (readPressureKPa() >= targetKPa) {
-      reachedTarget = true;
-      break;
-    }
-    delay(SAMPLE_INTERVAL_MS);
-  }
-
-  // SAFETY: this line must always run, whether we broke out because we hit
-  // the target pressure or because the while loop timed out. The pump must
-  // never be left running.
-  pumpOff();
-
-  return reachedTarget;
 }

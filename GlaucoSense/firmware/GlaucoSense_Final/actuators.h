@@ -28,10 +28,4 @@ void valveClose();
 // enters the ERROR state.
 void allOff();
 
-// Turns the pump on and waits until pressure reaches targetKPa.
-// Safety: the pump is ALWAYS switched off before this function returns,
-// whether it reached the target pressure or hit the timeout.
-// Returns true if the target pressure was reached, false on timeout.
-bool chargeReservoir(float targetKPa, unsigned long timeoutMs);
-
 #endif // ACTUATORS_H

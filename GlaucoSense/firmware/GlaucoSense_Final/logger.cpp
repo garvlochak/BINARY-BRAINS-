@@ -55,3 +55,20 @@ void logFeatures(int trialNumber, const Features& f) {
   Serial.print(",");
   Serial.println(f.pressure_drop_kpa, 3);
 }
+
+void logStateTransition(const char* oldStateName, const char* newStateName,
+                         const char* sensorLabel, float sensorValue) {
+  Serial.print("[");
+  Serial.print(millis());
+  Serial.print(" ms] ");
+  Serial.print(oldStateName);
+  Serial.print(" -> ");
+  Serial.print(newStateName);
+  if (sensorLabel != nullptr) {
+    Serial.print(" | ");
+    Serial.print(sensorLabel);
+    Serial.print("=");
+    Serial.print(sensorValue, 2);
+  }
+  Serial.println();
+}

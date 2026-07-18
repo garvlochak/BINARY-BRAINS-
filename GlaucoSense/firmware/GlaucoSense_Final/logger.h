@@ -32,4 +32,11 @@ void logFeaturesHeader();
 // Prints one feature row, matching machine_learning/data/features.csv
 void logFeatures(int trialNumber, const Features& f);
 
+// Prints one state-transition line, e.g.:
+// "[12345 ms] CHARGING -> TARGET_REACHED | pressure=6.20 kPa"
+// Call this on every state change so Serial Monitor always shows exactly
+// what the state machine is doing and when.
+void logStateTransition(const char* oldStateName, const char* newStateName,
+                         const char* sensorLabel, float sensorValue);
+
 #endif // LOGGER_H

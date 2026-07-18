@@ -17,12 +17,22 @@ Board: ESP32-WROOM-32 Dev Module (classic ESP32, NOT the S3)
   PUMP_PIN            GPIO25         Drives pump MOSFET gate (low-side)
   VALVE_PIN           GPIO26         Drives valve MOSFET gate (low-side)
   PRESSURE_ADC_PIN    GPIO34         ADC1_CH6, input from voltage divider
+  IR_SENSOR_PIN       GPIO35         Generic IR obstacle sensor OUT (input-only)
   START_BUTTON_PIN    GPIO27         INPUT_PULLUP, button pulls pin to GND
   STATUS_LED_PIN      GPIO32         Output, drives status LED (+ resistor)
 
 I2C addresses:
   VL53L0X ToF sensor  : default address (0x29), library default
   SSD1306 OLED        : 0x3C
+
+IR sensor active level:
+  IR_ACTIVE_LEVEL in config.h = LOW. Most cheap IR obstacle-sensor modules
+  (FC-51 style) pull OUT low when they detect something in range, and light
+  an onboard LED at the same time. If yours behaves the opposite way (pump
+  or isEyePresent() seem inverted vs. the sensor's own LED), flip this one
+  #define - nothing else needs to change. Debounce: IR_DEBOUNCE_COUNT=5
+  consecutive reads, IR_DEBOUNCE_INTERVAL_MS=10ms apart (~50ms to confirm),
+  to reject noise/loose-wire false triggers.
 
 Pressure divider (between MPX5010DP Vout and PRESSURE_ADC_PIN):
   Rtop    = 12k ohm
@@ -42,7 +52,8 @@ Why these specific pins (classic ESP32 gotchas - read before reassigning):
     them for anything that must stay in a known state during power-on/reset.
   - GPIO1/GPIO3 are UART0 TX/RX, used for flashing and Serial - do not reuse.
   - GPIO34-39 are input-only (no pull-up/down, cannot drive an output) -
-    fine for PRESSURE_ADC_PIN, useless for the pump/valve/LED/button.
+    fine for PRESSURE_ADC_PIN and IR_SENSOR_PIN (both are just inputs),
+    useless for the pump/valve/LED/button (those need to be outputs).
   - GPIO4 is ADC2 on classic ESP32 (it was ADC1 on the S3!). ADC2 shares
     hardware with the WiFi driver and is unreliable, so PRESSURE_ADC_PIN
     was moved to GPIO34, which is a true ADC1 channel.

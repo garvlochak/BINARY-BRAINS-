@@ -30,10 +30,11 @@ struct Features {
   float pressure_drop_kpa;   // peak_pressure_kpa minus the pressure at the last sample
 };
 
-// Computes Features from the raw arrays filled in by captureTrial().
-// baselineMM should come from measureBaselineMM(). sampleCount is how many
-// entries in timeMs/pressureKPa/distanceMM are valid. Distance samples of
-// -1 (invalid ToF reading) are skipped.
+// Computes Features from the raw arrays filled in by the PUFF/ACQUIRE states
+// in GlaucoSense_Final.ino. baselineMM should come from the average taken
+// during the EYE_DETECTED state. sampleCount is how many entries in
+// timeMs/pressureKPa/distanceMM are valid. Distance samples of -1 (invalid
+// ToF reading) are skipped.
 inline Features extractFeatures(const unsigned long* timeMs, const float* pressureKPa,
                                  const int* distanceMM, int sampleCount, float baselineMM) {
   Features f;
